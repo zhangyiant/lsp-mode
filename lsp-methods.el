@@ -1821,6 +1821,32 @@ If ACTION is not set it will be selected from `lsp-code-actions'."
 
 (defvar-local lsp-code-lenses nil
   "A list of code lenses computed for the buffer.")
+(defvar-local lsp--code-lens-buttons nil
+  "A list of buttons corresponding to code lenses for the buffer.")
+
+(defun lsp--clear-code-lens-buttons ()
+  (dolist (lens lsp--code-lens-buttons)
+    (delete-overlay lens))
+  (setq lsp--code-lens-buttons nil))
+
+(defun lsp--update-code-lens-buttons (lenses)
+  (lsp--clear-code-lens-buttons)
+  (dolist (lens lenses)
+    (let* ((range (gethash "range" lens))
+           (start (lsp--position-to-point (gethash "start" range)))
+           (end (lsp--position-to-point (gethash "end" range)))
+           (command (gethash "command" lens))
+           (button (make-button start end)))
+      (push button lsp--code-lens-buttons)
+      (button-put button 'help-echo (or (gethash "title" command)
+                                 (format "Execute command %s"
+                                         (gethash "command" command))))
+      (button-put button 'keymap '(keymap (mouse-1 . push-button)))
+      (button-put button 'lsp--button-command command)
+      (button-put button 'action #'lsp--button-action))))
+
+(defun lsp--button-action (button)
+  (lsp--execute-command (button-get button 'lsp--button-command)))
 
 (defun lsp--update-code-lenses (&optional callback)
   "Update the list of code lenses for the current buffer.
