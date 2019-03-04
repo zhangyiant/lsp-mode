@@ -3,4 +3,5 @@
 
 (provide 'lsp)
 
+(mytest)
 ;;; lsp.el ends here
